@@ -3,6 +3,8 @@
 from fastapi import APIRouter, HTTPException, Query, Request, Response
 
 from app.config import WHATSAPP_VERIFY_TOKEN
+from app.invoice_service import get_invoice_from_message
+from app.whatsapp import send_message
 
 router = APIRouter()
 
@@ -21,6 +23,24 @@ async def verify_webhook(
 
 @router.post("/webhook")
 async def receive_webhook(request: Request) -> dict:
-    """Recibe notificaciones de WhatsApp. Solo confirma recepción."""
-    await request.body()
+    """Recibe el mensaje, consulta la factura y responde por WhatsApp."""
+    body = await request.json()
+
+    try:
+        message = body["entry"][0]["changes"][0]["value"]["messages"][0]
+        sender = message["from"]
+        text = message["text"]["body"]
+    except (KeyError, IndexError, TypeError):
+        return {"status": "ok"}
+
+    invoice = get_invoice_from_message(text)
+    if invoice is not None:
+        reply = (
+            f"Factura {invoice['number']}: {invoice['status']} "
+            f"({invoice['customer']})"
+        )
+    else:
+        reply = "Factura no encontrada"
+
+    send_message(sender, reply)
     return {"status": "ok"}
