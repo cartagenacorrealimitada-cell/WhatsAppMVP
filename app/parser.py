@@ -2,7 +2,7 @@
 
 import re
 
-_INVOICE_PATTERN = re.compile(r"F-\d+", re.IGNORECASE)
+_INVOICE_PATTERN = re.compile(r"F\s*-\s*(\d+)", re.IGNORECASE)
 
 
 def parse_invoice_number(text: str) -> str | None:
@@ -14,4 +14,4 @@ def parse_invoice_number(text: str) -> str | None:
     if match is None:
         return None
 
-    return match.group(0).upper()
+    return f"F-{match.group(1)}"

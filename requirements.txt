@@ -1,3 +1,4 @@
 # Dependencias se agregan cuando el componente las use
 fastapi
 uvicorn
+python-dotenv
