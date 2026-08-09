@@ -28,6 +28,13 @@ def send_message(to: str, text: str) -> bool:
     )
     try:
         with urllib.request.urlopen(request) as response:
-            return 200 <= response.status < 300
-    except (urllib.error.URLError, urllib.error.HTTPError, OSError):
+            ok = 200 <= response.status < 300
+            print(f"SEND ok={ok} to={to}")
+            return ok
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode("utf-8", errors="replace")
+        print(f"SEND ok=False to={to} status={exc.code} body={detail}")
+        return False
+    except (urllib.error.URLError, OSError) as exc:
+        print(f"SEND ok=False to={to} error={exc}")
         return False

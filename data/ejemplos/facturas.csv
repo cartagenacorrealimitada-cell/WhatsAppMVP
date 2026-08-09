@@ -1,0 +1,4 @@
+number,cliente_id,descripcion,monto_original,saldo,fecha_emision,fecha_vencimiento,estado
+F-2001,1,Servicio demo CSV,150.00,150.00,2026-08-01,2026-09-15,PENDIENTE
+F-2002,1,Mantenimiento parcial,200.00,80.00,2026-07-01,2026-08-20,PAGADA_PARCIAL
+F-2003,2,Cargo vencido demo,90.00,90.00,2026-04-01,2026-05-01,VENCIDA

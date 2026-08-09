@@ -1,0 +1,48 @@
+---
+description: Al entrar a WhatsAppMVP, mantener el arranque y no perder el norte del MVP
+alwaysApply: true
+---
+
+# WhatsAppMVP — Arranque y norte
+
+## Norte (no desviarse)
+
+```text
+WhatsApp → webhook → SQLite → cliente → facturas/saldos → pagos futuros → WhatsApp
+```
+
+No proponer IA, Docker, paneles, QR ni bancos salvo que el usuario lo pida explícitamente.
+
+## Punto de reanudación (prioridad)
+
+Al iniciar o si el usuario dice “continuamos” / “retomamos”:
+
+1. Leer y seguir **`docs/RETOMAR.md`** (estado guardado + checklist).
+2. **MVP pre-QR cerrado.** El único pendiente grande es el **lunes**: QR / cooperativa (`docs/lunes-proveedor.md`). No inventar APIs de proveedor.
+3. URL estable: `https://backyard-overture-schilling.ngrok-free.dev/webhook` vía `.\scripts\start-all.ps1` (o `start-ngrok.ps1`).
+
+## Al iniciar / retomar una sesión en este proyecto
+
+1. Recordar el norte y abrir `docs/RETOMAR.md`.
+2. Checklist de arranque (sin inventar secretos):
+   - Verificar que `.env` carga (`WHATSAPP_TOKEN`, `WHATSAPP_VERIFY_TOKEN`, `PHONE_NUMBER_ID`, `PUBLIC_BASE_URL`, `PAYMENTS_CONFIRM_TOKEN`).
+   - Si falta token o envío falla con 401 → System User permanente (`docs/despliegue.md`), no token temporal de API Setup; reiniciar uvicorn.
+   - Arranque recomendado: `.\scripts\start-all.ps1`
+   - Alternativa: uvicorn `127.0.0.1:8000` + `.\scripts\start-ngrok.ps1`
+   - Callback Meta: `https://backyard-overture-schilling.ngrok-free.dev/webhook` + campo `messages` suscrito.
+3. Guía: `README.md` (Arranque) y `docs/despliegue.md`.
+4. Prueba de humo: WhatsApp `hola` / `mis pagos` / `cancelar`.
+
+## Forma de trabajo
+
+- Un componente a la vez; explicar archivos antes de codificar; esperar aprobación.
+- No escribir código que no se use de inmediato.
+- No modificar arquitectura mínima sin autorización.
+- No commit/push salvo que el usuario lo pida.
+- Nunca versionar `.env` ni tokens reales.
+
+## Si el usuario solo saluda o “continuamos”
+
+1. Abrir `docs/RETOMAR.md`.
+2. Reconectar arranque (env → `start-all` → Meta).
+3. No implementar QR/banco hasta tener documentación real del proveedor; el resto del MVP pre-QR ya está cerrado.

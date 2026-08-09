@@ -1,0 +1,4 @@
+whatsapp_id,nombre,nit,documento,telefono,email,activo
+59171112201,Pedro Vargas,1020304999,CI-2201,59171112201,pedro@example.com,1
+59171112202,Lucia Mendes,,CI-2202,59171112202,lucia@example.com,1
+59171112203,Jorge Salas,1020304888,CI-2203,59171112203,jorge@example.com,1
