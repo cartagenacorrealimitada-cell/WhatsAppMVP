@@ -42,6 +42,5 @@ async def receive_webhook(request: Request) -> dict:
     else:
         reply = "Factura no encontrada"
 
-    ok = send_message(sender, reply)
-    print(f"SEND ok={ok} to={sender} reply={reply!r}")
+    send_message(sender, reply)
     return {"status": "ok"}
