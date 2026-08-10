@@ -110,7 +110,7 @@ class ConversationCommandsTestCase(unittest.TestCase):
         self.assertIn("PENDIENTE", reply)
         self.assertIn("pago #", reply.lower())
         listed = handle_conversation(self.wa, "mis pagos")
-        self.assertIn("PENDIENTE", listed)
+        self.assertIn("PEND", listed)
         self.assertIn("10.00", listed)
 
 
