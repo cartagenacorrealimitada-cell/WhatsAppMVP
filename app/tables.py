@@ -102,7 +102,7 @@ def format_saldos_table(
     lines = [
         f"Cliente: {cliente_nombre}",
         "Saldos pendientes:",
-        "F=factura (con NIT) | R=recibo (sin NIT)",
+        "F=factura (con NIT) · R=recibo (sin NIT)",
         mono_block(table),
     ]
     if not invoices:
@@ -138,7 +138,7 @@ def format_pagos_table(
     lines = [
         f"Cliente: {cliente_nombre}",
         "Historial de pagos:",
-        "F=factura (con NIT) | R=recibo (sin NIT)",
+        "F=factura (con NIT) · R=recibo (sin NIT)",
         mono_block(table),
     ]
     if not payments:
