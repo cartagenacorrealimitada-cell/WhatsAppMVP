@@ -1,12 +1,11 @@
 # Retomar aquí
 
-**Fecha del punto de guardado:** 2026-08-09 ~13:40 (UTC-4)  
-**Estado:** MVP **pre-QR cerrado** y validado en WhatsApp (`hola` / `cancelar` / `mis pagos`).  
-**Esperando para mañana:**
-1. Lista real de clientes/facturas (import CSV).
-2. Cuenta / credenciales del proveedor QR-banco ([`docs/lunes-proveedor.md`](lunes-proveedor.md)).
-
-**No implementar QR ni APIs de banco** hasta tener esa documentación.
+**Fecha del punto de guardado:** 2026-08-09 ~22:58 (UTC-4)  
+**Estado:** MVP **pre-QR** operativo + tablas WhatsApp unificadas (F/R + TOTAL) + clientes reales cargados.  
+**Al volver:**
+1. Arrancar stack (`start-all` / uvicorn + ngrok).
+2. Seguir pruebas o importar más CSV reales.
+3. **No QR/banco** hasta tener cuenta + doc del proveedor ([`docs/lunes-proveedor.md`](lunes-proveedor.md)).
 
 ---
 
@@ -14,33 +13,31 @@
 
 | Área | Estado |
 |------|--------|
-| Flujo WhatsApp | `hola` → facturas → monto → `si` → pago `PENDIENTE` |
-| Comandos chat | `cancelar`, `mis pagos` / `pagos` |
-| DB | `clients`, `invoices`, `payments`, `sessions` |
-| CSV admin (CLI) | `scripts/import_csv.py` — [`docs/importacion-csv.md`](importacion-csv.md) |
-| Confirmación pagos | `POST /payments/confirm` (auth + idempotencia) |
-| Arranque diario | `.\scripts\start-all.ps1` (si ExecutionPolicy bloquea: `powershell -ExecutionPolicy Bypass -File .\scripts\start-all.ps1`) |
-| Tests | `python -m unittest discover -s tests -v` → OK |
-| URL estable | `https://backyard-overture-schilling.ngrok-free.dev` |
-| Callback Meta | `https://backyard-overture-schilling.ngrok-free.dev/webhook` |
-| Token permanente | **LISTO** (System User `METAQR`, caducidad Nunca) |
+| Flujo WhatsApp | `hola` → tabla saldos → monto → `si` → pago `PENDIENTE` |
+| Tablas chat | Formato único `Doc/Saldo|Monto/Est` + fila **TOTAL** (`app/tables.py`) |
+| Prefijos doc | **F** = factura (con NIT), **R** = recibo (sin NIT); sin guion en pantalla |
+| Comandos | `cancelar`, `mis pagos`, `hola` |
+| Clientes reales | CSV `data/clientes_reales.csv` (Dante, Beatriz, Rubén, etc.) |
+| Beatriz | `59162135555`, CI-6150994, `kira.mf7@gmail.com`, docs `RB*` |
+| Dante | `59176710767`, email `dantecartagena@icloud.com`, docs `F*` |
+| CSV admin | `scripts/import_csv.py` |
+| Pagos confirm | `POST /payments/confirm` (auth + idempotencia) |
+| Arranque | `powershell -ExecutionPolicy Bypass -File .\scripts\start-all.ps1` |
+| Tests | `python -m unittest discover -s tests -v` → OK (44+) |
+| URL / webhook | `https://backyard-overture-schilling.ngrok-free.dev/webhook` |
+| Token Meta | System User `METAQR` (permanente) |
 
-**Norte:** WhatsApp → cliente → facturas → saldos → pagos → WhatsApp.  
-QR / bancos / cooperativa: **solo con doc real del proveedor**.
-
-Resumen: [`docs/estado.md`](estado.md)
+**Norte:** WhatsApp → cliente → facturas/recibos → saldos → pagos → WhatsApp.
 
 ---
 
-## 2. Meta (referencia; ya operativo)
+## 2. Meta (operativo)
 
-- System User: **METAQR** (portafolio Oficina)  
-- WhatsApp: **`15556592498`**  
-- App: SALDOS DNT  
-- Callback: `https://backyard-overture-schilling.ngrok-free.dev/webhook` + campo `messages`  
-- Token solo en `.env` → `WHATSAPP_TOKEN=` (nunca en el chat)
-
-Si envío falla con 401: regenerar token System User → `.env` → reiniciar uvicorn. Guía: [`docs/despliegue.md`](despliegue.md)
+- App: SALDOS DNT · WhatsApp test `15556592498`
+- Callback: URL fija ngrok + campo `messages`
+- Token solo en `.env` (`WHATSAPP_TOKEN`)
+- Si `#131030`: número no está en lista de destinatarios de prueba (máx. ~5)
+- Si `WinError 10013` al arrancar uvicorn: puerto 8000 ya ocupado → no abrir segundo proceso
 
 ---
 
@@ -53,10 +50,9 @@ powershell -ExecutionPolicy Bypass -File .\scripts\start-all.ps1
 
 Verificar `.env`: `WHATSAPP_TOKEN`, `WHATSAPP_VERIFY_TOKEN`, `PHONE_NUMBER_ID`, `PUBLIC_BASE_URL`, `PAYMENTS_CONFIRM_TOKEN`.
 
-Prueba de humo en WhatsApp:
+**Importante:** `.env` e `invoices.db` **no** van en git — están solo en este PC/OneDrive. No los borres.
 
-- Dante: `59176710767`
-- Beatriz (lista real + facturas/pagos demo): `59162135555`
+Humo WhatsApp:
 
 ```text
 hola
@@ -64,15 +60,13 @@ mis pagos
 cancelar
 ```
 
-**Meta:** cada número debe estar en la lista de destinatarios de prueba o el bot no podrá responder (`#131030`).
+Números de prueba: Dante `59176710767` · Beatriz `59162135555` · Rubén `59177511597` (si están en Meta).
 
-Cuando llegue la lista real:
+Más CSV:
 
 ```powershell
 python scripts/import_csv.py --clientes data/clientes_reales.csv --facturas data/facturas_reales.csv
 ```
-
-(Ver formatos en [`docs/importacion-csv.md`](importacion-csv.md).)
 
 ---
 
@@ -80,10 +74,10 @@ python scripts/import_csv.py --clientes data/clientes_reales.csv --facturas data
 
 | Dato | Valor |
 |------|--------|
-| Cliente prueba WhatsApp | `59176710767` (Dante) / `59162135555` (Beatriz) |
-| Phone Number ID (env) | `1292640300591762` |
+| Repo remoto | `origin/main` (hacer `git pull` al volver si hubo push) |
+| Phone Number ID | `1292640300591762` |
 | Dominio ngrok | `backyard-overture-schilling.ngrok-free.dev` |
-| DB | `invoices.db` |
+| DB local | `invoices.db` |
 
 ---
 
@@ -91,8 +85,9 @@ python scripts/import_csv.py --clientes data/clientes_reales.csv --facturas data
 
 ```text
 Retomamos desde docs/RETOMAR.md
-MVP pre-QR cerrado. Pendiente: lista real (CSV) + cuenta QR/banco (docs/lunes-proveedor.md).
-No implementar QR ni APIs de banco hasta tener doc del proveedor.
+Pre-QR OK: tablas F/R + TOTAL, clientes reales.
+Pendiente: más pruebas / CSV / cuenta QR-banco (docs/lunes-proveedor.md).
+No implementar QR hasta tener doc del proveedor.
 ```
 
 ---
@@ -100,7 +95,8 @@ No implementar QR ni APIs de banco hasta tener doc del proveedor.
 ## 6. Qué NO hacer
 
 - No borrar `.env` ni `invoices.db`
-- No commitear tokens ni listas reales de clientes con datos sensibles
-- No cambiar la Callback URL de Meta a otra URL random de ngrok
-- No implementar QR/bancos/webhook de proveedor sin documentación real
+- No commitear tokens ni Excel con datos sensibles
+- No cambiar Callback URL de Meta a otra URL random de ngrok
+- No implementar QR/bancos sin documentación real
 - No exponer import CSV por FastAPI
+- No abrir dos uvicorn a la vez (puerto 8000)
