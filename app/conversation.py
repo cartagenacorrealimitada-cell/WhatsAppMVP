@@ -21,14 +21,19 @@ _PAYMENTS_WORDS = {"mis pagos", "pagos", "mispagos"}
 
 _ESTADO_CORTO = {
     "PENDIENTE": "PEND",
-    "PAGADA_PARCIAL": "PARCIAL",
-    "PAGADA": "PAGADA",
+    "PAGADA_PARCIAL": "PARC",
+    "PAGADA": "PAG",
     "VENCIDA": "VENC",
     "ANULADA": "ANUL",
     "CONFIRMADO": "OK",
     "RECHAZADO": "RECH",
     "ANULADO": "ANUL",
 }
+
+
+def _factura_corta(number: str) -> str:
+    """F-1007 -> F1007 (más compacto en tabla WhatsApp)."""
+    return str(number).replace("-", "").replace(" ", "")
 
 
 def _pad(text: str, width: int, *, align: str = "left") -> str:
@@ -85,17 +90,17 @@ def _format_invoice_list(invoices: list[dict], *, cliente_nombre: str) -> str:
     """Cabecera + tabla ASCII (mismo patrón visual que la imagen de referencia)."""
     rows: list[list[str]] = []
     for idx, inv in enumerate(invoices, start=1):
-        est = _ESTADO_CORTO.get(str(inv["estado"]), str(inv["estado"])[:7])
+        est = _ESTADO_CORTO.get(str(inv["estado"]), str(inv["estado"])[:4])
         rows.append(
             [
                 str(idx),
-                str(inv["number"]),
+                _factura_corta(inv["number"]),
                 f"{float(inv['saldo']):.2f}",
                 est,
             ]
         )
     table = _ascii_table(
-        ["#", "Factura", "Saldo Bs", "Estado"],
+        ["#", "Fac", "Saldo", "Est"],
         rows,
         aligns=["center", "left", "right", "left"],
     )
@@ -103,7 +108,7 @@ def _format_invoice_list(invoices: list[dict], *, cliente_nombre: str) -> str:
         f"Cliente: {cliente_nombre}\n"
         f"Facturas pendientes:\n"
         f"{_mono_block(table)}\n"
-        "Responde con el # (ej. 1) o el codigo (ej. F-1001).\n"
+        "Responde # (ej. 1) o codigo (ej. F1001).\n"
         "Tambien: mis pagos | cancelar | hola"
     )
 
@@ -122,17 +127,17 @@ def _format_payments_list(
     rows: list[list[str]] = []
     for pay in payments:
         number = pay.get("factura_number") or f"#{pay['factura_id']}"
-        est = _ESTADO_CORTO.get(str(pay["estado"]), str(pay["estado"])[:7])
+        est = _ESTADO_CORTO.get(str(pay["estado"]), str(pay["estado"])[:4])
         rows.append(
             [
                 str(pay["id"]),
-                str(number),
+                _factura_corta(str(number)),
                 f"{float(pay['monto']):.2f}",
                 est,
             ]
         )
     table = _ascii_table(
-        ["#", "Factura", "Monto Bs", "Estado"],
+        ["#", "Fac", "Monto", "Est"],
         rows,
         aligns=["center", "left", "right", "left"],
     )
@@ -140,7 +145,7 @@ def _format_payments_list(
         f"Cliente: {cliente_nombre}\n"
         f"Historial de pagos:\n"
         f"{_mono_block(table)}\n"
-        "Escribe hola para ver facturas, o cancelar para salir."
+        "Escribe hola para facturas, o cancelar para salir."
     )
 
 
@@ -159,21 +164,21 @@ def _parse_amount(text: str, balance: float) -> float | None:
 
 def _resolve_invoice_choice(text: str, invoices: list[dict]) -> dict | None:
     cleaned = text.strip().upper().replace(" ", "")
+    cleaned_no_dash = cleaned.replace("-", "")
     # índice 1..n
     if re.fullmatch(r"\d+", text.strip()):
         idx = int(text.strip())
         if 1 <= idx <= len(invoices):
             return invoices[idx - 1]
-    # por número de factura
+    # por número de factura (con o sin guion: F-1001 / F1001)
     for inv in invoices:
-        if inv["number"].upper().replace(" ", "") == cleaned:
+        inv_u = inv["number"].upper().replace(" ", "")
+        inv_nodash = inv_u.replace("-", "")
+        if inv_u == cleaned or inv_nodash == cleaned_no_dash:
             return inv
-        if cleaned == inv["number"].upper():
-            return inv
-    # F-1001 con espacios
-    compact = re.sub(r"\s+", "", text.strip().upper())
+    compact = re.sub(r"\s+", "", text.strip().upper()).replace("-", "")
     for inv in invoices:
-        if inv["number"].upper() == compact:
+        if inv["number"].upper().replace("-", "").replace(" ", "") == compact:
             return inv
     return None
 
