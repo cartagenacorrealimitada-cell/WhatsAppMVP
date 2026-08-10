@@ -109,6 +109,17 @@ class DatabaseTestCase(unittest.TestCase):
         self.assertIsNone(cleared["nit"])
         self.assertIsNone(get_client_by_nit("5566778899"))
 
+    def test_limpiar_email_no_se_restaura_por_seed(self) -> None:
+        """init_db/_seed no debe reponer email demo tras borrar a NULL."""
+        ana = get_client_by_whatsapp("59176710767")
+        self.assertIsNotNone(ana)
+        cleared = update_client(ana["id"], email=None)
+        self.assertIsNone(cleared["email"])
+        init_db()
+        again = get_client_by_whatsapp("59176710767")
+        self.assertIsNotNone(again)
+        self.assertIsNone(again["email"])
+
     def test_crear_factura_y_relacion(self) -> None:
         client = create_client(whatsapp_id="59171110003", nombre="Con Factura")
         inv = create_invoice(

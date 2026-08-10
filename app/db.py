@@ -581,24 +581,8 @@ def _seed_if_needed(conn: sqlite3.Connection) -> None:
             ],
         )
 
-    # Enriquecer identidad (NIT/documento/email) sin sobrescribir valores ya cargados
-    for whatsapp_id, nit, documento, email in [
-        ("59176710767", "1020304019", "CI-1001", "ana@example.com"),
-        ("59170000002", "1020304027", "CI-1002", "carlos@example.com"),
-        ("59170000003", "1020304035", "CI-1003", "maria@example.com"),
-    ]:
-        conn.execute(
-            """
-            UPDATE clients
-            SET nit = COALESCE(nit, ?),
-                documento = COALESCE(documento, ?),
-                telefono = COALESCE(telefono, whatsapp_id),
-                email = COALESCE(email, ?),
-                updated_at = ?
-            WHERE whatsapp_id = ?
-            """,
-            (nit, documento, email, now, whatsapp_id),
-        )
+    # No rellenar nit/documento/email con COALESCE: init_db() corre en cada
+    # lectura/update y restauraría valores demo tras un clear intencional (NULL).
 
     # Asegurar Luis si no existe (sin NIT: no todos los clientes lo tienen)
     luis = conn.execute(
@@ -692,6 +676,85 @@ def _seed_if_needed(conn: sqlite3.Connection) -> None:
 
     _ensure_invoice("F-1010", luis_id, "Alta de servicio", 400.0, 400.0, "2026-08-01", "2026-09-30", INV_PENDIENTE)
     _ensure_invoice("F-1011", luis_id, "Anulada demo", 25.0, 25.0, "2026-01-01", "2026-02-01", INV_ANULADA)
+
+    # Beatriz (pruebas con número real 59162135555): cliente + facturas espejo
+    beatriz_wa = "59162135555"
+    beatriz_row = conn.execute(
+        "SELECT id FROM clients WHERE whatsapp_id = ?", (beatriz_wa,)
+    ).fetchone()
+    if beatriz_row is None:
+        conn.execute(
+            """
+            INSERT INTO clients
+                (whatsapp_id, nombre, nit, documento, telefono, email,
+                 activo, created_at, updated_at)
+            VALUES (?, ?, NULL, ?, ?, ?, 1, ?, ?)
+            """,
+            (
+                beatriz_wa,
+                "BEATRIZ MAMANI FLORES",
+                "CI-6150994",
+                beatriz_wa,
+                "kira.mf7@gmail.com",
+                now,
+                now,
+            ),
+        )
+        beatriz_id = conn.execute(
+            "SELECT id FROM clients WHERE whatsapp_id = ?", (beatriz_wa,)
+        ).fetchone()[0]
+    else:
+        beatriz_id = beatriz_row[0]
+        # Mantener identidad real si el seed corre de nuevo (sin pisar otros campos)
+        conn.execute(
+            """
+            UPDATE clients
+            SET documento = COALESCE(documento, ?),
+                email = COALESCE(email, ?),
+                nombre = CASE
+                    WHEN nombre LIKE 'BEATRIZ%' THEN nombre
+                    ELSE ?
+                END,
+                updated_at = ?
+            WHERE id = ?
+            """,
+            (
+                "CI-6150994",
+                "kira.mf7@gmail.com",
+                "BEATRIZ MAMANI FLORES",
+                now,
+                beatriz_id,
+            ),
+        )
+
+    _ensure_invoice(
+        "F-B001", beatriz_id, "Servicio mensual", 150.0, 150.0,
+        "2026-08-01", "2026-09-01", INV_PENDIENTE,
+    )
+    _ensure_invoice(
+        "F-B004", beatriz_id, "Mantenimiento", 80.0, 80.0,
+        "2026-09-01", "2026-10-01", INV_PENDIENTE,
+    )
+    _ensure_invoice(
+        "F-B005", beatriz_id, "Instalación parcial", 300.0, 120.0,
+        "2026-07-01", "2026-08-15", INV_PAGADA_PARCIAL,
+    )
+    _ensure_invoice(
+        "F-B006", beatriz_id, "Cargo ya cancelado", 50.0, 0.0,
+        "2026-05-01", "2026-06-01", INV_PAGADA,
+    )
+    _ensure_invoice(
+        "F-B007", beatriz_id, "Cargo vencido parcial", 90.0, 70.0,
+        "2026-04-01", "2026-05-01", INV_PAGADA_PARCIAL,
+    )
+    _ensure_invoice(
+        "F-B008", beatriz_id, "Servicio demo", 150.0, 150.0,
+        "2026-08-01", "2026-09-15", INV_PENDIENTE,
+    )
+    _ensure_invoice(
+        "F-B009", beatriz_id, "Mantenimiento parcial", 200.0, 80.0,
+        "2026-07-01", "2026-08-20", INV_PAGADA_PARCIAL,
+    )
 
 
 def init_db() -> None:

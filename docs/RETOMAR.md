@@ -53,13 +53,18 @@ powershell -ExecutionPolicy Bypass -File .\scripts\start-all.ps1
 
 Verificar `.env`: `WHATSAPP_TOKEN`, `WHATSAPP_VERIFY_TOKEN`, `PHONE_NUMBER_ID`, `PUBLIC_BASE_URL`, `PAYMENTS_CONFIRM_TOKEN`.
 
-Prueba de humo en WhatsApp (`59176710767` / Ana López):
+Prueba de humo en WhatsApp:
+
+- Dante: `59176710767`
+- Beatriz (lista real + facturas/pagos demo): `59162135555`
 
 ```text
 hola
 mis pagos
 cancelar
 ```
+
+**Meta:** cada número debe estar en la lista de destinatarios de prueba o el bot no podrá responder (`#131030`).
 
 Cuando llegue la lista real:
 
@@ -75,7 +80,7 @@ python scripts/import_csv.py --clientes data/clientes_reales.csv --facturas data
 
 | Dato | Valor |
 |------|--------|
-| Cliente prueba WhatsApp | `59176710767` (Ana López) |
+| Cliente prueba WhatsApp | `59176710767` (Dante) / `59162135555` (Beatriz) |
 | Phone Number ID (env) | `1292640300591762` |
 | Dominio ngrok | `backyard-overture-schilling.ngrok-free.dev` |
 | DB | `invoices.db` |
