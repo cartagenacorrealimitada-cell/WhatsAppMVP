@@ -18,43 +18,130 @@ from app.sessions import get_or_create_session, reset_session, update_session
 _MENU_WORDS = {"menu", "menú", "hola", "hi", "inicio", "facturas", "deudas"}
 _CANCEL_WORDS = {"cancelar", "cancel", "salir", "abortar"}
 _PAYMENTS_WORDS = {"mis pagos", "pagos", "mispagos"}
-_ROW_SEP = "------------"
+
+_ESTADO_CORTO = {
+    "PENDIENTE": "PEND",
+    "PAGADA_PARCIAL": "PARCIAL",
+    "PAGADA": "PAGADA",
+    "VENCIDA": "VENC",
+    "ANULADA": "ANUL",
+    "CONFIRMADO": "OK",
+    "RECHAZADO": "RECH",
+    "ANULADO": "ANUL",
+}
 
 
-def _format_invoice_list(invoices: list[dict]) -> str:
-    """Lista ordenada tipo ficha (WhatsApp no alinea tablas ASCII)."""
-    blocks: list[str] = ["*Tus facturas pendientes*", ""]
+def _pad(text: str, width: int, *, align: str = "left") -> str:
+    t = str(text)
+    if len(t) > width:
+        t = t[:width]
+    if align == "right":
+        return t.rjust(width)
+    if align == "center":
+        return t.center(width)
+    return t.ljust(width)
+
+
+def _ascii_table(
+    headers: list[str],
+    rows: list[list[str]],
+    *,
+    aligns: list[str] | None = None,
+) -> str:
+    """Tabla ASCII estilo EDUCATE / MySQL (columnas fijas)."""
+    n = len(headers)
+    aligns = aligns or ["left"] * n
+    width = [len(h) for h in headers]
+    norm: list[list[str]] = []
+    for row in rows:
+        cells = [str(row[i]) if i < len(row) else "" for i in range(n)]
+        norm.append(cells)
+        for i, cell in enumerate(cells):
+            width[i] = max(width[i], len(cell))
+
+    def sep() -> str:
+        return "+" + "+".join("-" * (w + 2) for w in width) + "+"
+
+    def line(cells: list[str], *, header: bool = False) -> str:
+        parts: list[str] = []
+        for i, cell in enumerate(cells):
+            a = "center" if header else aligns[i]
+            parts.append(f" {_pad(cell, width[i], align=a)} ")
+        return "|" + "|".join(parts) + "|"
+
+    out = [sep(), line(headers, header=True), sep()]
+    for row in norm:
+        out.append(line(row))
+    out.append(sep())
+    return "\n".join(out)
+
+
+def _mono_block(table: str) -> str:
+    """Un solo bloque monospace (como mensajes tipo EDUCATE en WhatsApp)."""
+    return f"```{table.strip()}```"
+
+
+def _format_invoice_list(invoices: list[dict], *, cliente_nombre: str) -> str:
+    """Cabecera + tabla ASCII (mismo patrón visual que la imagen de referencia)."""
+    rows: list[list[str]] = []
     for idx, inv in enumerate(invoices, start=1):
-        blocks.append(f"*{idx}. {inv['number']}*")
-        blocks.append(f"Saldo: *{float(inv['saldo']):.2f}*")
-        blocks.append(f"Vence: {inv['fecha_vencimiento']}")
-        blocks.append(f"Estado: {inv['estado']}")
-        if idx < len(invoices):
-            blocks.append(_ROW_SEP)
-    blocks.append("")
-    blocks.append("Responde con el *número* (ej. 1) o el código (ej. F-B001).")
-    blocks.append("También: *mis pagos* | *cancelar* | *hola*")
-    return "\n".join(blocks)
+        est = _ESTADO_CORTO.get(str(inv["estado"]), str(inv["estado"])[:7])
+        rows.append(
+            [
+                str(idx),
+                str(inv["number"]),
+                f"{float(inv['saldo']):.2f}",
+                est,
+            ]
+        )
+    table = _ascii_table(
+        ["#", "Factura", "Saldo Bs", "Estado"],
+        rows,
+        aligns=["center", "left", "right", "left"],
+    )
+    return (
+        f"Cliente: {cliente_nombre}\n"
+        f"Facturas pendientes:\n"
+        f"{_mono_block(table)}\n"
+        "Responde con el # (ej. 1) o el codigo (ej. F-1001).\n"
+        "Tambien: mis pagos | cancelar | hola"
+    )
 
 
-def _format_payments_list(payments: list[dict]) -> str:
-    """Historial de pagos en fichas ordenadas."""
+def _format_payments_list(
+    payments: list[dict],
+    *,
+    cliente_nombre: str,
+) -> str:
     if not payments:
         return (
+            f"Cliente: {cliente_nombre}\n"
             "No tienes solicitudes de pago registradas.\n"
-            "Escribe *hola* para ver tus facturas."
+            "Escribe hola para ver tus facturas."
         )
-    blocks: list[str] = ["*Tus últimos pagos*", ""]
-    for i, pay in enumerate(payments):
-        number = pay.get("factura_number") or f"factura #{pay['factura_id']}"
-        blocks.append(f"*Pago #{pay['id']}* — {number}")
-        blocks.append(f"Monto: *{float(pay['monto']):.2f}*")
-        blocks.append(f"Estado: {pay['estado']}")
-        if i < len(payments) - 1:
-            blocks.append(_ROW_SEP)
-    blocks.append("")
-    blocks.append("Escribe *hola* para ver facturas, o *cancelar* para salir.")
-    return "\n".join(blocks)
+    rows: list[list[str]] = []
+    for pay in payments:
+        number = pay.get("factura_number") or f"#{pay['factura_id']}"
+        est = _ESTADO_CORTO.get(str(pay["estado"]), str(pay["estado"])[:7])
+        rows.append(
+            [
+                str(pay["id"]),
+                str(number),
+                f"{float(pay['monto']):.2f}",
+                est,
+            ]
+        )
+    table = _ascii_table(
+        ["#", "Factura", "Monto Bs", "Estado"],
+        rows,
+        aligns=["center", "left", "right", "left"],
+    )
+    return (
+        f"Cliente: {cliente_nombre}\n"
+        f"Historial de pagos:\n"
+        f"{_mono_block(table)}\n"
+        "Escribe hola para ver facturas, o cancelar para salir."
+    )
 
 
 def _parse_amount(text: str, balance: float) -> float | None:
@@ -115,7 +202,7 @@ def handle_conversation(whatsapp_id: str, text: str) -> str:
 
     if normalized in _PAYMENTS_WORDS:
         payments = get_payments_by_cliente_id(client["id"], limit=10)
-        return _format_payments_list(payments)
+        return _format_payments_list(payments, cliente_nombre=client["nombre"])
 
     if normalized in _MENU_WORDS or state == STATE_START:
         if not pending:
@@ -130,7 +217,10 @@ def handle_conversation(whatsapp_id: str, text: str) -> str:
             selected_invoice_id=None,
             selected_amount=None,
         )
-        return f"Hola {client['nombre']}.\n\n{_format_invoice_list(pending)}"
+        return (
+            f"Hola {client['nombre']}.\n\n"
+            f"{_format_invoice_list(pending, cliente_nombre=client['nombre'])}"
+        )
 
     if state == STATE_SHOW_INVOICES:
         if not pending:
@@ -139,7 +229,8 @@ def handle_conversation(whatsapp_id: str, text: str) -> str:
         chosen = _resolve_invoice_choice(text, pending)
         if chosen is None:
             return (
-                "No entendí la selección.\n\n" + _format_invoice_list(pending)
+                "No entendí la selección.\n\n"
+                + _format_invoice_list(pending, cliente_nombre=client["nombre"])
             )
         update_session(
             whatsapp_id,

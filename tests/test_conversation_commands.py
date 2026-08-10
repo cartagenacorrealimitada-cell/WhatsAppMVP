@@ -68,17 +68,21 @@ class ConversationCommandsTestCase(unittest.TestCase):
         reply = handle_conversation(self.wa, "pagos")
         self.assertIn(str(pay["id"]), reply)
         self.assertIn("F-CMD-1", reply)
-        self.assertIn("PENDIENTE", reply)
+        self.assertIn("PEND", reply)
         self.assertIn("25.00", reply)
-        self.assertIn("Pago #", reply)
+        self.assertIn("+", reply)
+        self.assertIn("|", reply)
+        self.assertIn("```", reply)
 
-    def test_facturas_en_fichas(self) -> None:
+    def test_facturas_tabla_educate(self) -> None:
         reset_session(self.wa)
         reply = handle_conversation(self.wa, "hola")
-        self.assertIn("facturas pendientes", reply.lower())
+        self.assertIn("Cliente:", reply)
+        self.assertIn("Facturas pendientes:", reply)
         self.assertIn("F-CMD-1", reply)
-        self.assertIn("Saldo:", reply)
-        self.assertIn("1. F-CMD-1", reply)
+        self.assertIn("Saldo Bs", reply)
+        self.assertIn("+---+", reply)
+        self.assertIn("```", reply)
 
     def test_cancelar_en_confirmacion(self) -> None:
         reset_session(self.wa)
