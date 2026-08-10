@@ -18,89 +18,43 @@ from app.sessions import get_or_create_session, reset_session, update_session
 _MENU_WORDS = {"menu", "menú", "hola", "hi", "inicio", "facturas", "deudas"}
 _CANCEL_WORDS = {"cancelar", "cancel", "salir", "abortar"}
 _PAYMENTS_WORDS = {"mis pagos", "pagos", "mispagos"}
-
-
-def _ascii_table(headers: list[str], rows: list[list[str]]) -> str:
-    """Tabla ASCII simple (estilo MySQL CLI)."""
-    cols = list(headers)
-    width = [len(h) for h in cols]
-    norm_rows: list[list[str]] = []
-    for row in rows:
-        cells = [str(row[i]) if i < len(row) else "" for i in range(len(cols))]
-        norm_rows.append(cells)
-        for i, cell in enumerate(cells):
-            width[i] = max(width[i], len(cell))
-
-    def sep() -> str:
-        return "+" + "+".join("-" * (w + 2) for w in width) + "+"
-
-    def line(cells: list[str]) -> str:
-        parts = [f" {cells[i].ljust(width[i])} " for i in range(len(cols))]
-        return "|" + "|".join(parts) + "|"
-
-    out = [sep(), line(cols), sep()]
-    for row in norm_rows:
-        out.append(line(row))
-    out.append(sep())
-    return "\n".join(out)
-
-
-def _whatsapp_table_block(table: str) -> str:
-    """
-    WhatsApp alinea columnas solo en monoespaciado.
-    Un bloque multilínea a menudo falla en el celular; una línea = un ```...```.
-    """
-    lines = table.strip("\n").split("\n")
-    return "\n".join(f"```{line}```" for line in lines)
+_ROW_SEP = "------------"
 
 
 def _format_invoice_list(invoices: list[dict]) -> str:
-    rows: list[list[str]] = []
+    """Lista ordenada tipo ficha (WhatsApp no alinea tablas ASCII)."""
+    blocks: list[str] = ["*Tus facturas pendientes*", ""]
     for idx, inv in enumerate(invoices, start=1):
-        estado = str(inv["estado"])
-        if estado == "PAGADA_PARCIAL":
-            estado = "PARCIAL"
-        rows.append(
-            [
-                str(idx),
-                str(inv["number"]),
-                f"{float(inv['saldo']):.2f}",
-                str(inv["fecha_vencimiento"]),
-                estado,
-            ]
-        )
-    table = _ascii_table(["#", "Factura", "Saldo", "Vence", "Estado"], rows)
-    return (
-        "*Tus facturas pendientes*\n"
-        f"{_whatsapp_table_block(table)}\n"
-        "Responde con el *#* (ej. 1) o el código (ej. F-B001).\n"
-        "También: *mis pagos* | *cancelar* | *hola*"
-    )
+        blocks.append(f"*{idx}. {inv['number']}*")
+        blocks.append(f"Saldo: *{float(inv['saldo']):.2f}*")
+        blocks.append(f"Vence: {inv['fecha_vencimiento']}")
+        blocks.append(f"Estado: {inv['estado']}")
+        if idx < len(invoices):
+            blocks.append(_ROW_SEP)
+    blocks.append("")
+    blocks.append("Responde con el *número* (ej. 1) o el código (ej. F-B001).")
+    blocks.append("También: *mis pagos* | *cancelar* | *hola*")
+    return "\n".join(blocks)
 
 
 def _format_payments_list(payments: list[dict]) -> str:
+    """Historial de pagos en fichas ordenadas."""
     if not payments:
         return (
             "No tienes solicitudes de pago registradas.\n"
             "Escribe *hola* para ver tus facturas."
         )
-    rows: list[list[str]] = []
-    for pay in payments:
-        number = pay.get("factura_number") or f"#{pay['factura_id']}"
-        rows.append(
-            [
-                str(pay["id"]),
-                str(number),
-                f"{float(pay['monto']):.2f}",
-                str(pay["estado"]),
-            ]
-        )
-    table = _ascii_table(["Id", "Factura", "Monto", "Estado"], rows)
-    return (
-        "*Tus últimos pagos*\n"
-        f"{_whatsapp_table_block(table)}\n"
-        "Escribe *hola* para ver facturas, o *cancelar* para salir."
-    )
+    blocks: list[str] = ["*Tus últimos pagos*", ""]
+    for i, pay in enumerate(payments):
+        number = pay.get("factura_number") or f"factura #{pay['factura_id']}"
+        blocks.append(f"*Pago #{pay['id']}* — {number}")
+        blocks.append(f"Monto: *{float(pay['monto']):.2f}*")
+        blocks.append(f"Estado: {pay['estado']}")
+        if i < len(payments) - 1:
+            blocks.append(_ROW_SEP)
+    blocks.append("")
+    blocks.append("Escribe *hola* para ver facturas, o *cancelar* para salir.")
+    return "\n".join(blocks)
 
 
 def _parse_amount(text: str, balance: float) -> float | None:
