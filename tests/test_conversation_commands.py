@@ -66,10 +66,20 @@ class ConversationCommandsTestCase(unittest.TestCase):
             monto=25.0,
         )
         reply = handle_conversation(self.wa, "pagos")
-        self.assertIn(f"#{pay['id']}", reply)
+        self.assertIn(str(pay["id"]), reply)
         self.assertIn("F-CMD-1", reply)
         self.assertIn("PENDIENTE", reply)
         self.assertIn("25.00", reply)
+        self.assertIn("+", reply)
+        self.assertIn("|", reply)
+
+    def test_facturas_en_tabla(self) -> None:
+        reset_session(self.wa)
+        reply = handle_conversation(self.wa, "hola")
+        self.assertIn("Factura", reply)
+        self.assertIn("Saldo", reply)
+        self.assertIn("F-CMD-1", reply)
+        self.assertIn("+---+", reply)
 
     def test_cancelar_en_confirmacion(self) -> None:
         reset_session(self.wa)

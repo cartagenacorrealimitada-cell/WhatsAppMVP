@@ -20,17 +20,50 @@ _CANCEL_WORDS = {"cancelar", "cancel", "salir", "abortar"}
 _PAYMENTS_WORDS = {"mis pagos", "pagos", "mispagos"}
 
 
+def _ascii_table(headers: list[str], rows: list[list[str]]) -> str:
+    """Tabla ASCII simple (estilo MySQL CLI) para WhatsApp."""
+    cols = list(headers)
+    width = [len(h) for h in cols]
+    norm_rows: list[list[str]] = []
+    for row in rows:
+        cells = [str(row[i]) if i < len(row) else "" for i in range(len(cols))]
+        norm_rows.append(cells)
+        for i, cell in enumerate(cells):
+            width[i] = max(width[i], len(cell))
+
+    def sep() -> str:
+        return "+" + "+".join("-" * (w + 2) for w in width) + "+"
+
+    def line(cells: list[str]) -> str:
+        parts = [f" {cells[i].ljust(width[i])} " for i in range(len(cols))]
+        return "|" + "|".join(parts) + "|"
+
+    out = [sep(), line(cols), sep()]
+    for row in norm_rows:
+        out.append(line(row))
+    out.append(sep())
+    return "\n".join(out)
+
+
 def _format_invoice_list(invoices: list[dict]) -> str:
-    lines = ["Tus facturas pendientes:", ""]
+    rows: list[list[str]] = []
     for idx, inv in enumerate(invoices, start=1):
-        lines.append(
-            f"{idx}) {inv['number']} — saldo {inv['saldo']:.2f} "
-            f"(vence {inv['fecha_vencimiento']}, {inv['estado']})"
+        rows.append(
+            [
+                str(idx),
+                str(inv["number"]),
+                f"{float(inv['saldo']):.2f}",
+                str(inv["fecha_vencimiento"]),
+                str(inv["estado"]),
+            ]
         )
-    lines.append("")
-    lines.append("Responde con el número de la lista (ej. 1) o el código (ej. F-1001).")
-    lines.append("También: mis pagos | cancelar | hola")
-    return "\n".join(lines)
+    table = _ascii_table(["#", "Factura", "Saldo", "Vence", "Estado"], rows)
+    return (
+        "Tus facturas pendientes:\n"
+        f"```\n{table}\n```\n"
+        "Responde con el # de la lista (ej. 1) o el código (ej. F-1001).\n"
+        "También: mis pagos | cancelar | hola"
+    )
 
 
 def _format_payments_list(payments: list[dict]) -> str:
@@ -39,16 +72,23 @@ def _format_payments_list(payments: list[dict]) -> str:
             "No tienes solicitudes de pago registradas.\n"
             "Escribe hola para ver tus facturas."
         )
-    lines = ["Tus últimos pagos:", ""]
+    rows: list[list[str]] = []
     for pay in payments:
-        number = pay.get("factura_number") or f"factura#{pay['factura_id']}"
-        lines.append(
-            f"#{pay['id']} — {number}: {float(pay['monto']):.2f} "
-            f"({pay['estado']})"
+        number = pay.get("factura_number") or f"#{pay['factura_id']}"
+        rows.append(
+            [
+                str(pay["id"]),
+                str(number),
+                f"{float(pay['monto']):.2f}",
+                str(pay["estado"]),
+            ]
         )
-    lines.append("")
-    lines.append("Escribe hola para ver facturas, o cancelar para salir.")
-    return "\n".join(lines)
+    table = _ascii_table(["Id", "Factura", "Monto", "Estado"], rows)
+    return (
+        "Tus últimos pagos:\n"
+        f"```\n{table}\n```\n"
+        "Escribe hola para ver facturas, o cancelar para salir."
+    )
 
 
 def _parse_amount(text: str, balance: float) -> float | None:
