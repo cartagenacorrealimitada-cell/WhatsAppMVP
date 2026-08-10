@@ -21,7 +21,7 @@ _PAYMENTS_WORDS = {"mis pagos", "pagos", "mispagos"}
 
 
 def _ascii_table(headers: list[str], rows: list[list[str]]) -> str:
-    """Tabla ASCII simple (estilo MySQL CLI) para WhatsApp."""
+    """Tabla ASCII simple (estilo MySQL CLI)."""
     cols = list(headers)
     width = [len(h) for h in cols]
     norm_rows: list[list[str]] = []
@@ -45,24 +45,36 @@ def _ascii_table(headers: list[str], rows: list[list[str]]) -> str:
     return "\n".join(out)
 
 
+def _whatsapp_table_block(table: str) -> str:
+    """
+    WhatsApp alinea columnas solo en monoespaciado.
+    Un bloque multilínea a menudo falla en el celular; una línea = un ```...```.
+    """
+    lines = table.strip("\n").split("\n")
+    return "\n".join(f"```{line}```" for line in lines)
+
+
 def _format_invoice_list(invoices: list[dict]) -> str:
     rows: list[list[str]] = []
     for idx, inv in enumerate(invoices, start=1):
+        estado = str(inv["estado"])
+        if estado == "PAGADA_PARCIAL":
+            estado = "PARCIAL"
         rows.append(
             [
                 str(idx),
                 str(inv["number"]),
                 f"{float(inv['saldo']):.2f}",
                 str(inv["fecha_vencimiento"]),
-                str(inv["estado"]),
+                estado,
             ]
         )
     table = _ascii_table(["#", "Factura", "Saldo", "Vence", "Estado"], rows)
     return (
-        "Tus facturas pendientes:\n"
-        f"```\n{table}\n```\n"
-        "Responde con el # de la lista (ej. 1) o el código (ej. F-1001).\n"
-        "También: mis pagos | cancelar | hola"
+        "*Tus facturas pendientes*\n"
+        f"{_whatsapp_table_block(table)}\n"
+        "Responde con el *#* (ej. 1) o el código (ej. F-B001).\n"
+        "También: *mis pagos* | *cancelar* | *hola*"
     )
 
 
@@ -70,7 +82,7 @@ def _format_payments_list(payments: list[dict]) -> str:
     if not payments:
         return (
             "No tienes solicitudes de pago registradas.\n"
-            "Escribe hola para ver tus facturas."
+            "Escribe *hola* para ver tus facturas."
         )
     rows: list[list[str]] = []
     for pay in payments:
@@ -85,9 +97,9 @@ def _format_payments_list(payments: list[dict]) -> str:
         )
     table = _ascii_table(["Id", "Factura", "Monto", "Estado"], rows)
     return (
-        "Tus últimos pagos:\n"
-        f"```\n{table}\n```\n"
-        "Escribe hola para ver facturas, o cancelar para salir."
+        "*Tus últimos pagos*\n"
+        f"{_whatsapp_table_block(table)}\n"
+        "Escribe *hola* para ver facturas, o *cancelar* para salir."
     )
 
 
