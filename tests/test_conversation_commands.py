@@ -29,7 +29,7 @@ class ConversationCommandsTestCase(unittest.TestCase):
         self.wa = "59171118801"
         self.client = create_client(whatsapp_id=self.wa, nombre="Cmd User")
         self.invoice = create_invoice(
-            number="F-CMD-1",
+            number="R-CMD-1",
             cliente_id=self.client["id"],
             monto_original=80.0,
             fecha_vencimiento="2026-12-31",
@@ -57,7 +57,9 @@ class ConversationCommandsTestCase(unittest.TestCase):
     def test_mis_pagos_vacio(self) -> None:
         reset_session(self.wa)
         reply = handle_conversation(self.wa, "mis pagos")
-        self.assertIn("No tienes solicitudes", reply)
+        self.assertIn("Sin pagos registrados", reply)
+        self.assertIn("Cliente:", reply)
+        self.assertIn("```", reply)
 
     def test_mis_pagos_lista(self) -> None:
         pay = create_payment(
@@ -67,9 +69,10 @@ class ConversationCommandsTestCase(unittest.TestCase):
         )
         reply = handle_conversation(self.wa, "pagos")
         self.assertIn(str(pay["id"]), reply)
-        self.assertIn("FCMD1", reply)
+        self.assertIn("RCMD1", reply)
         self.assertIn("PEND", reply)
         self.assertIn("25.00", reply)
+        self.assertIn("Doc", reply)
         self.assertIn("+", reply)
         self.assertIn("|", reply)
         self.assertIn("```", reply)
@@ -78,12 +81,13 @@ class ConversationCommandsTestCase(unittest.TestCase):
         reset_session(self.wa)
         reply = handle_conversation(self.wa, "hola")
         self.assertIn("Cliente:", reply)
-        self.assertIn("Facturas pendientes:", reply)
-        self.assertIn("FCMD1", reply)
+        self.assertIn("Saldos pendientes:", reply)
+        self.assertIn("RCMD1", reply)
         self.assertIn("Saldo", reply)
-        self.assertIn("Fac", reply)
+        self.assertIn("Doc", reply)
         self.assertIn("+---+", reply)
         self.assertIn("```", reply)
+        self.assertIn("F=factura", reply)
 
     def test_cancelar_en_confirmacion(self) -> None:
         reset_session(self.wa)

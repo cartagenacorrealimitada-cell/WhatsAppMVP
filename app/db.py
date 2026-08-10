@@ -674,8 +674,8 @@ def _seed_if_needed(conn: sqlite3.Connection) -> None:
     _ensure_invoice("F-1003", maria, "Consultoría", 320.0, 320.0, "2026-06-01", "2026-07-15", INV_VENCIDA)
     _ensure_invoice("F-1009", maria, "Soporte", 60.0, 30.0, "2026-08-01", "2026-09-20", INV_PAGADA_PARCIAL)
 
-    _ensure_invoice("F-1010", luis_id, "Alta de servicio", 400.0, 400.0, "2026-08-01", "2026-09-30", INV_PENDIENTE)
-    _ensure_invoice("F-1011", luis_id, "Anulada demo", 25.0, 25.0, "2026-01-01", "2026-02-01", INV_ANULADA)
+    _ensure_invoice("R-1010", luis_id, "Alta de servicio", 400.0, 400.0, "2026-08-01", "2026-09-30", INV_PENDIENTE)
+    _ensure_invoice("R-1011", luis_id, "Anulada demo", 25.0, 25.0, "2026-01-01", "2026-02-01", INV_ANULADA)
 
     # Beatriz (pruebas con número real 59162135555): cliente + facturas espejo
     beatriz_wa = "59162135555"
@@ -728,31 +728,31 @@ def _seed_if_needed(conn: sqlite3.Connection) -> None:
         )
 
     _ensure_invoice(
-        "F-B001", beatriz_id, "Servicio mensual", 150.0, 150.0,
+        "R-B001", beatriz_id, "Servicio mensual", 150.0, 150.0,
         "2026-08-01", "2026-09-01", INV_PENDIENTE,
     )
     _ensure_invoice(
-        "F-B004", beatriz_id, "Mantenimiento", 80.0, 80.0,
+        "R-B004", beatriz_id, "Mantenimiento", 80.0, 80.0,
         "2026-09-01", "2026-10-01", INV_PENDIENTE,
     )
     _ensure_invoice(
-        "F-B005", beatriz_id, "Instalación parcial", 300.0, 120.0,
+        "R-B005", beatriz_id, "Instalación parcial", 300.0, 120.0,
         "2026-07-01", "2026-08-15", INV_PAGADA_PARCIAL,
     )
     _ensure_invoice(
-        "F-B006", beatriz_id, "Cargo ya cancelado", 50.0, 0.0,
+        "R-B006", beatriz_id, "Cargo ya cancelado", 50.0, 0.0,
         "2026-05-01", "2026-06-01", INV_PAGADA,
     )
     _ensure_invoice(
-        "F-B007", beatriz_id, "Cargo vencido parcial", 90.0, 70.0,
+        "R-B007", beatriz_id, "Cargo vencido parcial", 90.0, 70.0,
         "2026-04-01", "2026-05-01", INV_PAGADA_PARCIAL,
     )
     _ensure_invoice(
-        "F-B008", beatriz_id, "Servicio demo", 150.0, 150.0,
+        "R-B008", beatriz_id, "Servicio demo", 150.0, 150.0,
         "2026-08-01", "2026-09-15", INV_PENDIENTE,
     )
     _ensure_invoice(
-        "F-B009", beatriz_id, "Mantenimiento parcial", 200.0, 80.0,
+        "R-B009", beatriz_id, "Mantenimiento parcial", 200.0, 80.0,
         "2026-07-01", "2026-08-20", INV_PAGADA_PARCIAL,
     )
 

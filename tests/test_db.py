@@ -277,7 +277,7 @@ class DatabaseTestCase(unittest.TestCase):
                 out = await receive_webhook(req)
                 self.assertEqual(out, {"status": "ok"})
                 self.assertTrue(sm.called)
-                self.assertIn("facturas pendientes", sm.call_args[0][1].lower())
+                self.assertIn("saldos pendientes", sm.call_args[0][1].lower())
 
         import asyncio
 

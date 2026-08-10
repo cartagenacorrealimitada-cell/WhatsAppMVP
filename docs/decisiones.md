@@ -22,3 +22,7 @@ Se preservan filas existentes; si SQLite reescribe FK a tablas `*_legacy_mig`, `
 ## D6 — Comandos globales de chat
 `cancelar` reinicia la sesión en cualquier estado.  
 `mis pagos` / `pagos` lista las últimas solicitudes sin crear endpoints HTTP nuevos.
+
+## D7 — Formato único de tablas WhatsApp
+Saldos y pagos se muestran siempre con el mismo patrón ASCII (Cliente + título + tabla monospace).
+Columna `Doc`: prefijo **F** = factura (cliente con NIT), **R** = recibo (cliente sin NIT), sin guion en pantalla (`F1001`, `RB001`).
