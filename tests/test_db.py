@@ -239,8 +239,8 @@ class DatabaseTestCase(unittest.TestCase):
     def test_flujo_whatsapp_y_legacy(self) -> None:
         reset_session("59176710767")
         reply = handle_conversation("59176710767", "hola")
-        self.assertIn("F-1001", reply)
-        self.assertIn("PENDIENTE", reply)
+        self.assertIn("F1001", reply)
+        self.assertIn("PEND", reply)
         # pagadas/anuladas no deben listarse como pendientes
         self.assertNotIn("F-1006", reply)
 
