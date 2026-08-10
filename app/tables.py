@@ -83,17 +83,22 @@ def format_saldos_table(
     *,
     cliente_nombre: str,
 ) -> str:
-    """Formato único: Cliente + Saldos pendientes + tabla Doc/Saldo/Est."""
+    """Formato único: Cliente + Saldos pendientes + tabla Doc/Saldo/Est + Total."""
     rows: list[list[str]] = []
+    total = 0.0
     for idx, inv in enumerate(invoices, start=1):
+        saldo = float(inv["saldo"])
+        total += saldo
         rows.append(
             [
                 str(idx),
                 doc_corto(inv["number"]),
-                f"{float(inv['saldo']):.2f}",
+                f"{saldo:.2f}",
                 estado_corto(str(inv["estado"])),
             ]
         )
+    if invoices:
+        rows.append(["", "TOTAL", f"{total:.2f}", ""])
     table = ascii_table(
         ["#", "Doc", "Saldo", "Est"],
         rows,
@@ -118,18 +123,23 @@ def format_pagos_table(
     *,
     cliente_nombre: str,
 ) -> str:
-    """Formato único para historial de pagos."""
+    """Formato único para historial de pagos + Total."""
     rows: list[list[str]] = []
+    total = 0.0
     for pay in payments:
         number = pay.get("factura_number") or f"#{pay['factura_id']}"
+        monto = float(pay["monto"])
+        total += monto
         rows.append(
             [
                 str(pay["id"]),
                 doc_corto(str(number)),
-                f"{float(pay['monto']):.2f}",
+                f"{monto:.2f}",
                 estado_corto(str(pay["estado"])),
             ]
         )
+    if payments:
+        rows.append(["", "TOTAL", f"{total:.2f}", ""])
     table = ascii_table(
         ["#", "Doc", "Monto", "Est"],
         rows,

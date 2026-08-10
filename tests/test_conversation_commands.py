@@ -85,6 +85,7 @@ class ConversationCommandsTestCase(unittest.TestCase):
         self.assertIn("RCMD1", reply)
         self.assertIn("Saldo", reply)
         self.assertIn("Doc", reply)
+        self.assertIn("TOTAL", reply)
         self.assertIn("+---+", reply)
         self.assertIn("```", reply)
         self.assertIn("F=factura", reply)
